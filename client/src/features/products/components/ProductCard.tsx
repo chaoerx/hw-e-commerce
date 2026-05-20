@@ -1,12 +1,11 @@
 import { Badge, Button, Card, Group, Text } from '@mantine/core';
 
-import { ProductImage } from './ProductImage';
 
 export const ProductCard = () => {
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
       <Card.Section>
-        <ProductImage src="" alt="Product" height={160} />
+
       </Card.Section>
 
       <Group justify="space-between" mt="md" mb="xs">
