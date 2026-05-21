@@ -25,7 +25,7 @@ router.get("/", (req, res) => {
       (p) =>
         p.title.toLowerCase().includes(query) ||
         p.description.toLowerCase().includes(query) ||
-        p.brand.toLowerCase().includes(query),
+        (p.brand?.toLowerCase().includes(query) ?? false),
     );
   }
 

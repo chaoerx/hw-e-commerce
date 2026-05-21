@@ -23,10 +23,12 @@ export const ProductSidebarFilters = ({
 }: ProductSidebarFiltersProps) => {
   const categoryOptions = [
     { value: "", label: "All Categories" },
-    ...categories.map((category) => ({
-      value: category,
-      label: category.charAt(0).toUpperCase() + category.slice(1),
-    })),
+    ...categories
+      .filter((category): category is string => typeof category === "string")
+      .map((category) => ({
+        value: category,
+        label: category.charAt(0).toUpperCase() + category.slice(1),
+      })),
   ];
   return (
     <Stack gap="md">

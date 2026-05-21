@@ -1,4 +1,5 @@
 import { Container, Grid, SimpleGrid, Text, Title } from "@mantine/core";
+import axios from "axios";
 import { ErrorMessage } from "../../../components/ui/ErrorMessage";
 import { Spinner } from "../../../components/ui/Spinner";
 import { ProductCard } from "../components/ProductCard";
@@ -26,9 +27,12 @@ const Products = () => {
           {isError && (
             <ErrorMessage
               message={
-                error instanceof Error
-                  ? error.message
-                  : "Failed to load products"
+                axios.isAxiosError(error)
+                  ? (error.response?.data as { message?: string })?.message ??
+                    error.message
+                  : error instanceof Error
+                    ? error.message
+                    : "Failed to load products"
               }
             />
           )}

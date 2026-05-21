@@ -1,7 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 
 export const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3001",
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? "https://dummyjson.com",
   headers: {
     "Content-Type": "application/json",
   },
