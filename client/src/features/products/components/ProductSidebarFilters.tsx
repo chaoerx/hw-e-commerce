@@ -15,7 +15,19 @@ import { IconStar, IconStarFilled } from '@tabler/icons-react';
 
 const RATINGS = [4, 3, 2, 1];
 
-export const ProductSidebarFilters = () => {
+interface ProductSidebarFiltersProps {
+  categories?: string[];
+}
+export const ProductSidebarFilters = ({
+  categories = [],
+}: ProductSidebarFiltersProps) => {
+  const categoryOptions = [
+    { value: "", label: "All Categories" },
+    ...categories.map((category) => ({
+      value: category,
+      label: category.charAt(0).toUpperCase() + category.slice(1),
+    })),
+  ];
   return (
     <Stack gap="md">
       <Box p="md" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
@@ -29,7 +41,7 @@ export const ProductSidebarFilters = () => {
               Category
             </Text>
             <Select
-              data={[{ value: '', label: 'All Categories' }]}
+              data={categoryOptions}
               placeholder="All Categories"
               searchable
               clearable

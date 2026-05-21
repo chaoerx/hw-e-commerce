@@ -1,41 +1,73 @@
-import { Badge, Button, Card, Group, Text } from '@mantine/core';
+import { Badge, Box, Card, Group, Image, Text } from "@mantine/core";
+import { IconStarFilled } from "@tabler/icons-react";
+import { Link } from "react-router-dom";
+import type { Product } from "../types/product.types";
+import { getDiscountedPrice, hasDiscount } from "../utils/productPrice";
 
+interface ProductCardProps {
+  product: Product;
+}
 
-export const ProductCard = () => {
+export const ProductCard = ({ product }: ProductCardProps) => {
+  const onSale = hasDiscount(product);
+  const discountedPrice = getDiscountedPrice(product);
+
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card
+      component={Link}
+      to={`/products/${product.id}`}
+      shadow="sm"
+      padding="lg"
+      radius="md"
+      withBorder
+      h="100%"
+      style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
+    >
       <Card.Section>
-
+        <Image
+          src={product.thumbnail}
+          height={160}
+          alt={product.title}
+        />
       </Card.Section>
 
-      <Group justify="space-between" mt="md" mb="xs">
-        <Text fw={500} lineClamp={1} style={{ flex: 1 }}>
-          Product Title
-        </Text>
-        <Badge color="pink">$99.99</Badge>
-      </Group>
-
-      <Text size="sm" c="dimmed" lineClamp={2}>
-        Product description goes here
+      <Text fw={500} lineClamp={2} mt="md" mb="xs">
+        {product.title}
       </Text>
 
-      <Group>
-        <Text size="sm" mt="xs">
-          Stock: 10
-        </Text>
-        <Text size="sm" mt="xs">
-          Rating: 4.5
-        </Text>
+      <Group justify="space-between" align="flex-end" mb="xs">
+        <Box>
+          {onSale ? (
+            <Group gap="xs" align="baseline">
+              <Text size="xl" fw={700} c="blue">
+                ${discountedPrice.toFixed(2)}
+              </Text>
+              <Text size="sm" c="dimmed" td="line-through">
+                ${product.price.toFixed(2)}
+              </Text>
+            </Group>
+          ) : (
+            <Text size="xl" fw={700} c="blue">
+              ${product.price.toFixed(2)}
+            </Text>
+          )}
+        </Box>
+        {onSale && (
+          <Badge color="red" variant="filled">
+            -{Math.round(product.discountPercentage)}%
+          </Badge>
+        )}
       </Group>
 
-      <Button
-        color="blue"
-        fullWidth
-        mt="md"
-        radius="md"
-      >
-        View Details
-      </Button>
+      <Group gap={4}>
+        <IconStarFilled size={14} color="#ffd43b" />
+        <Text size="sm" c="dimmed">
+          {product.rating.toFixed(1)}
+        </Text>
+        <Text size="sm" c="dimmed">
+          • {product.stock} in stock
+        </Text>
+      </Group>
     </Card>
   );
 };
