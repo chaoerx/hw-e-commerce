@@ -1,5 +1,7 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Alert,
+  Anchor,
   Button,
   Card,
   Container,
@@ -9,18 +11,32 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import axios from "axios";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  loginSchema,
+  type LoginFormValues,
+} from "../schemas/login.schema";
+import { getAuthErrorMessage } from "../utils/authErrors";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -28,23 +44,14 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const onSubmit = async (values: LoginFormValues) => {
     setError(null);
-    setIsSubmitting(true);
 
     try {
-      await login({ username, password });
+      await login(values);
       navigate("/");
     } catch (err) {
-      setError(
-        axios.isAxiosError(err)
-          ? ((err.response?.data as { message?: string })?.message ??
-            "Invalid username or password")
-          : "Login failed. Please try again.",
-      );
-    } finally {
-      setIsSubmitting(false);
+      setError(getAuthErrorMessage(err, "Login failed. Please try again."));
     }
   };
 
@@ -55,31 +62,42 @@ const Login = () => {
           Login
         </Title>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <Stack gap="md">
             {error && (
-              <Alert color="red" title="Login failed">
+              <Alert color="red" title="Login failed" withCloseButton onClose={() => setError(null)}>
                 {error}
               </Alert>
             )}
 
             <TextInput
               label="Username"
-              value={username}
-              onChange={(event) => setUsername(event.currentTarget.value)}
-              required
+              placeholder="emilys"
+              error={errors.username?.message}
+              {...register("username")}
             />
 
             <PasswordInput
               label="Password"
-              value={password}
-              onChange={(event) => setPassword(event.currentTarget.value)}
-              required
+              placeholder="Your password"
+              error={errors.password?.message}
+              {...register("password")}
             />
+
+            <Text size="xs" c="dimmed">
+              Test account: emilys / emilyspass
+            </Text>
 
             <Button type="submit" loading={isSubmitting} fullWidth>
               Sign in
             </Button>
+
+            <Text size="sm" ta="center" c="dimmed">
+              Don&apos;t have an account?{" "}
+              <Anchor component={Link} to="/signup" fw={500}>
+                Sign up
+              </Anchor>
+            </Text>
           </Stack>
         </form>
       </Card>

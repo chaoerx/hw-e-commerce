@@ -1,5 +1,6 @@
 import { Container, Grid, SimpleGrid, Text, Title } from "@mantine/core";
 import axios from "axios";
+import { useSearchParams } from "react-router-dom";
 import { ErrorMessage } from "../../../components/ui/ErrorMessage";
 import { Spinner } from "../../../components/ui/Spinner";
 import { ProductCard } from "../components/ProductCard";
@@ -7,13 +8,20 @@ import { ProductSidebarFilters } from "../components/ProductSidebarFilters";
 import { useCategories, useProducts } from "../hooks/useProductQueries";
 
 const Products = () => {
-  const { data, isLoading, isError, error } = useProducts();
+  const [searchParams] = useSearchParams();
+  const category = searchParams.get("category") ?? undefined;
+  const { data, isLoading, isError, error } = useProducts({ category });
   const { data: categories } = useCategories();
 
   return (
     <Container size="xl" py="xl">
       <Title order={1} mb="xl">
-        Our Products
+        {category
+          ? category
+              .split("-")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ")
+          : "Our Products"}
       </Title>
 
       <Grid>
