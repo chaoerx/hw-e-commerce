@@ -8,12 +8,13 @@ import type {
 export const getProducts = async (
   filters?: ProductFilters,
 ): Promise<ProductsResponse> => {
-  const { category, search, limit, skip } = filters ?? {};
+  const { category, search, limit, skip, sortBy, order } = filters ?? {};
+  const sortParams = sortBy ? { sortBy, order } : undefined;
 
   if (search) {
     const { data } = await axiosClient.get<ProductsResponse>(
       "/products/search",
-      { params: { q: search, limit, skip } },
+      { params: { q: search, limit, skip, ...sortParams } },
     );
     return data;
   }
@@ -21,13 +22,13 @@ export const getProducts = async (
   if (category) {
     const { data } = await axiosClient.get<ProductsResponse>(
       `/products/category/${category}`,
-      { params: { limit, skip } },
+      { params: { limit, skip, ...sortParams } },
     );
     return data;
   }
 
   const { data } = await axiosClient.get<ProductsResponse>("/products", {
-    params: { limit, skip },
+    params: { limit, skip, ...sortParams },
   });
   return data;
 };

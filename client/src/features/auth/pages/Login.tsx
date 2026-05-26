@@ -13,7 +13,7 @@ import {
 } from "@mantine/core";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   loginSchema,
@@ -23,8 +23,13 @@ import { getAuthErrorMessage } from "../utils/authErrors";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
+
+  const redirectTo =
+    (location.state as { from?: { pathname: string } } | null)?.from
+      ?.pathname ?? "/";
 
   const {
     register,
@@ -40,16 +45,16 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/", { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, redirectTo]);
 
   const onSubmit = async (values: LoginFormValues) => {
     setError(null);
 
     try {
       await login(values);
-      navigate("/");
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(getAuthErrorMessage(err, "Login failed. Please try again."));
     }

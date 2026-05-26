@@ -1,4 +1,12 @@
-import { Avatar, Button, Group, Indicator, Menu, Text } from "@mantine/core";
+import {
+  Avatar,
+  Button,
+  Group,
+  Indicator,
+  Menu,
+  Stack,
+  Text,
+} from "@mantine/core";
 import {
   IconChevronDown,
   IconLogout,
@@ -14,9 +22,14 @@ import { ThemeToggler } from "./ThemeToggler";
 
 export const Navbar = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { data: cart } = useCart();
   const cartCount = cart?.totalQuantity ?? 0;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <Group
@@ -35,64 +48,94 @@ export const Navbar = () => {
 
       <SearchBar />
 
-      <Group>
+      <Group gap="sm">
         <ThemeToggler />
+
         <Indicator
-          label={cartCount > 0 ? cartCount : undefined}
-          size={16}
+          inline
+          label={cartCount > 99 ? "99+" : cartCount}
+          size={18}
           color="red"
-          position="middle-start"
           disabled={cartCount === 0}
+          processing={cartCount > 0}
         >
           <Button
             variant="subtle"
             leftSection={<IconShoppingCart size={18} />}
             onClick={() => navigate("/cart")}
+            aria-label={`Cart, ${cartCount} items`}
           >
             Cart
           </Button>
         </Indicator>
 
-        {isAuthenticated && user ? (
-          <Menu shadow="md" width={200}>
+        {!isLoading && isAuthenticated && user ? (
+          <Menu shadow="md" width={240} position="bottom-end">
             <Menu.Target>
               <Button
                 variant="subtle"
                 rightSection={<IconChevronDown size={16} />}
+                aria-label="Account menu"
               >
-                <Group gap="xs">
-                  <Avatar src={user.image} alt={user.username} size="sm" />
-                  <Text size="sm">{user.firstName}</Text>
+                <Group gap="xs" wrap="nowrap">
+                  <Avatar
+                    src={user.image}
+                    alt={user.username}
+                    size="sm"
+                    radius="xl"
+                  />
+                  <Stack gap={0} visibleFrom="sm">
+                    <Text size="sm" fw={600} lineClamp={1}>
+                      {user.firstName} {user.lastName}
+                    </Text>
+                    <Text size="xs" c="dimmed" lineClamp={1}>
+                      @{user.username}
+                    </Text>
+                  </Stack>
                 </Group>
               </Button>
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Label>Account</Menu.Label>
+              <Menu.Label>
+                <Group gap="sm">
+                  <Avatar src={user.image} alt="" size="md" radius="xl" />
+                  <div>
+                    <Text size="sm" fw={600}>
+                      {user.firstName} {user.lastName}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {user.email}
+                    </Text>
+                  </div>
+                </Group>
+              </Menu.Label>
+
+              <Menu.Divider />
+
               <Menu.Item
                 leftSection={<IconSettings size={16} />}
                 onClick={() => navigate("/settings")}
               >
                 Settings
               </Menu.Item>
+
               <Menu.Divider />
+
               <Menu.Item
                 leftSection={<IconLogout size={16} />}
                 color="red"
-                onClick={() => {
-                  logout();
-                  navigate("/login");
-                }}
+                onClick={handleLogout}
               >
                 Logout
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
-        ) : (
+        ) : !isLoading ? (
           <Button variant="filled" onClick={() => navigate("/login")}>
             Login
           </Button>
-        )}
+        ) : null}
       </Group>
     </Group>
   );

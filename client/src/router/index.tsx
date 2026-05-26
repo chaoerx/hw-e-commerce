@@ -7,6 +7,7 @@ import Home from "../features/products/pages/Home";
 import Products from "../features/products/pages/Products";
 import ProductDetail from "../features/products/pages/ProductDetail";
 import Cart from "../features/cart/pages/Cart";
+import { ProtectedRoute } from "../features/auth/components/ProtectedRoute";
 import Login from "../features/auth/pages/Login";
 import Signup from "../features/auth/pages/Signup";
 import Settings from "../features/settings/pages/Settings";
@@ -26,12 +27,11 @@ export const router = createHashRouter([
       { path: "login", element: <Login /> },
       { path: "signup", element: <Signup /> },
       {
-        path: "cart",
-        element: <Cart />,
-      },
-      {
-        path: "settings",
-        element: <Settings />,
+        element: <ProtectedRoute />,
+        children: [
+          { path: "cart", element: <Cart /> },
+          { path: "settings", element: <Settings /> },
+        ],
       },
     ],
   },

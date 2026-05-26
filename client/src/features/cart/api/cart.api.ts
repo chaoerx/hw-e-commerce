@@ -1,10 +1,7 @@
-import axiosClient from "../../../lib/axiosClient";
-import type {
-  AddCartItemInput,
-  Cart,
-  CartProduct,
-  UpdateCartProductInput,
-} from "../types/cart.types";
+import { getProduct } from "../../products/api/products.api";
+import type { Product } from "../../products/types/product.types";
+import { getDiscountedPrice } from "../../products/utils/productPrice";
+import type { AddCartItemInput, Cart, CartProduct } from "../types/cart.types";
 import { loadStoredCart, saveStoredCart } from "./cartStorage";
 
 const createEmptyCart = (userId: number): Cart => ({
@@ -17,30 +14,47 @@ const createEmptyCart = (userId: number): Cart => ({
   totalQuantity: 0,
 });
 
-const normalizeCartProduct = (product: CartProduct): CartProduct => ({
-  ...product,
-  discountedTotal:
-    product.discountedTotal ??
-    (product as CartProduct & { discountedPrice?: number }).discountedPrice ??
-    product.total,
-});
+const buildCartProduct = (product: Product, quantity: number): CartProduct => {
+  const unitDiscounted = getDiscountedPrice(product);
 
-export const normalizeCart = (cart: Cart): Cart => {
-  const products = cart.products.map(normalizeCartProduct);
+  return {
+    id: product.id,
+    title: product.title,
+    price: product.price,
+    quantity,
+    total: product.price * quantity,
+    discountPercentage: product.discountPercentage,
+    discountedTotal: unitDiscounted * quantity,
+    thumbnail: product.thumbnail,
+  };
+};
+
+const recalculateCart = (cart: Cart): Cart => {
+  const products = cart.products;
+  const total = products.reduce((sum, item) => sum + item.total, 0);
+  const discountedTotal = products.reduce(
+    (sum, item) => sum + item.discountedTotal,
+    0,
+  );
 
   return {
     ...cart,
+    id: 0,
     products,
+    total,
+    discountedTotal,
     totalProducts: products.length,
     totalQuantity: products.reduce((sum, item) => sum + item.quantity, 0),
   };
 };
 
 const persistCart = (userId: number, cart: Cart) => {
-  const normalized = normalizeCart({ ...cart, userId });
+  const normalized = recalculateCart({ ...cart, userId });
   saveStoredCart(userId, normalized);
   return normalized;
 };
+
+export const normalizeCart = (cart: Cart): Cart => recalculateCart(cart);
 
 export const getCart = async (userId: number): Promise<Cart> => {
   const stored = loadStoredCart(userId);
@@ -54,27 +68,18 @@ export const addCartItem = async (
   { productId, quantity = 1 }: AddCartItemInput,
 ): Promise<Cart> => {
   const currentCart = await getCart(userId);
-  const existingItem = currentCart.products.find((item) => item.id === productId);
-  const updatedQuantity = (existingItem?.quantity ?? 0) + quantity;
+  const product = await getProduct(productId);
+  const existing = currentCart.products.find((item) => item.id === productId);
 
-  const payload: UpdateCartProductInput[] = [
-    { id: productId, quantity: updatedQuantity },
-  ];
+  const products = existing
+    ? currentCart.products.map((item) =>
+        item.id === productId
+          ? buildCartProduct(product, item.quantity + quantity)
+          : item,
+      )
+    : [...currentCart.products, buildCartProduct(product, quantity)];
 
-  if (currentCart.products.length === 0) {
-    const { data } = await axiosClient.post<Cart>("/carts/add", {
-      userId,
-      products: payload,
-    });
-    return persistCart(userId, data);
-  }
-
-  const { data } = await axiosClient.put<Cart>(`/carts/${currentCart.id}`, {
-    merge: true,
-    products: payload,
-  });
-
-  return persistCart(userId, data);
+  return persistCart(userId, { ...currentCart, products });
 };
 
 export const removeCartItem = async (
@@ -90,47 +95,19 @@ export const removeCartItem = async (
 
   const nextQuantity = target.quantity - 1;
 
-  const products: UpdateCartProductInput[] =
-    nextQuantity > 0
-      ? currentCart.products.map((item) =>
-          item.id === productId
-            ? { id: item.id, quantity: nextQuantity }
-            : { id: item.id, quantity: item.quantity },
-        )
-      : currentCart.products
-          .filter((item) => item.id !== productId)
-          .map((item) => ({ id: item.id, quantity: item.quantity }));
-
-  if (products.length === 0) {
-    return clearCart(userId);
+  if (nextQuantity <= 0) {
+    const products = currentCart.products.filter((item) => item.id !== productId);
+    return persistCart(userId, { ...currentCart, products });
   }
 
-  if (currentCart.id === 0) {
-    const { data } = await axiosClient.post<Cart>("/carts/add", {
-      userId,
-      products,
-    });
-    return persistCart(userId, data);
-  }
+  const product = await getProduct(productId);
+  const products = currentCart.products.map((item) =>
+    item.id === productId ? buildCartProduct(product, nextQuantity) : item,
+  );
 
-  const { data } = await axiosClient.put<Cart>(`/carts/${currentCart.id}`, {
-    merge: false,
-    products,
-  });
-
-  return persistCart(userId, data);
+  return persistCart(userId, { ...currentCart, products });
 };
 
 export const clearCart = async (userId: number): Promise<Cart> => {
-  const currentCart = await getCart(userId);
-
-  if (currentCart.id > 0) {
-    try {
-      await axiosClient.delete(`/carts/${currentCart.id}`);
-    } catch {
-      // DummyJSON may reject delete; still clear local state.
-    }
-  }
-
   return persistCart(userId, createEmptyCart(userId));
 };
